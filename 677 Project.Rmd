@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 pacman::p_load(haven,ggplot2, reshape2,dplyr,car,FSA,rcompanion,knitr,RColorBrewer,pwr,plotly)
 ```
 
+(PJ helped me on this project)
+
 ## Statistics and the Law
 ## (1) the data are sufficient evidence of discrimination to warrant corrective action and (2) the data are not sufficient.
 
