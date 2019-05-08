@@ -1,0 +1,177 @@
+---
+title: "677 Final"
+author: "Mark"
+date: "5/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(haven,ggplot2, reshape2,dplyr,car,FSA,rcompanion,knitr,RColorBrewer,pwr,plotly)
+```
+
+## Statistics and the Law
+## (1) the data are sufficient evidence of discrimination to warrant corrective action and (2) the data are not sufficient.
+
+H0: There is no different of mortgage refuse rate between white applicants and minority applicants.
+H0: There is different of mortgage refuse rate between white applicants and minority applicants.
+
+```{r}
+data1<-read.csv("acorn.csv")
+ftest <- var.test(data1$MIN,data1$WHITE)
+ftest
+```
+Assuming the alpha level is 0.05. The p-value of F-test is p = 0.02993, which is less than the significant level alpha = 0.05. Therefore, we can conclude that there is differences between the variances of the two sets of data. Then, we will use t-test for assume unequal variances
+
+```{r}
+ttest <- t.test(data1$MIN, data1$WHITE, var.equal = FALSE,alternative = "greater")
+ttest
+```
+
+The p-value of the test is 2.979e-07, which is less than the significance level alpha = 0.05. So we reject H0, and support the data are sufficient evidence of discrimination to warrant corrective action.
+
+
+
+## 2.Comparing Suppliers
+## Revenue aside, which of the three schools produces the higher quality ornithopters, or are do they all produce about the same quality?
+
+
+Ho: The qualities of ornithopters are the same for three schools
+Ha: The qualities of ornithopters are different between three schools
+
+```{r}
+data2 <- matrix(c(12,23,89,8,12,62,21,30,119),ncol=3,nrow = 3,byrow=TRUE)
+colnames(data2) <- c("dead","art","fly")
+rownames(data2) <- c("Area51","BDV","Giffen")
+fly <- as.table(data2)
+chisq.test(data2,correct = F)
+
+
+```
+
+Assuming the alpha level is 0.05. We can't to reject the null hypothesis because the p-value of this chi-square test is 0.8613, which is much greater than the significant level. The data are sufficient to show that three schools produce the same quality.
+
+## 3. How deadly are sharks?
+```{r data exploration}
+shark<-read.csv("sharkattack.csv") 
+data3 <- shark %>% 
+  select(4,5,8,9) %>% 
+  filter(Country.code == "AU"|Country.code=="US") %>% 
+  filter(Type == "Unprovoked"|Type =="Provoked")
+
+Q3 <- ggplot(data=data3)+
+  geom_bar(aes(x=Country.code,fill=Type),position = "fill")
+ggplotly(Q3)
+
+```
+From the plot, we could found that the provoked rate in Australia is almost the same as in United State. It's 13% for AU and 11% for U.S. 
+
+```{r}
+chit<-shark%>%filter(Country.code=="US"|Country.code=="AU")%>%
+  filter(Fatal=="Y"|Fatal=="N")
+chit<-table(droplevels(chit$Country),droplevels(chit$Fatal))
+chit
+chisq.test(chit,correct = F)
+```
+From the chi-square test, we have sufficient evidence to say that that sharks attacks in Australia is more fatal, more deadly than sharks attacks in U.S.
+
+
+## 4. Power analysis
+
+### Explain the use of the arcsine transformation. How does it work? Why does it work?
+
+The arcsine transformation helped us transform the proportionl parmeter and make the difference bewteen unites are equally detectable, which means to have equal dectectability. The porportional parameter is scaled of −π/2 to π/2. Therefore, we get the detectable values and able to sove problem of faling into either side of their possible range.
+
+
+
+## 5.Estimators
+
+### Exponential
+See the appendix in repository.
+
+### A new distribution
+See the appendix in repository.
+
+### Rain in Southern Illinois 
+```{r}
+ill_60 <- read.table("ill-60.txt", quote="\"", comment.char="")
+ill_60$year <- rep("1960")
+ill_61 <- read.table("ill-61.txt", quote="\"", comment.char="")
+ill_61$year <-  rep("1961")
+ill_62 <- read.table("ill-62.txt", quote="\"", comment.char="")
+ill_62$year <-  rep("1962")
+ill_63<- read.table("ill-63.txt", quote="\"", comment.char="")
+ill_63$year <-  rep("1963")
+ill_64 <- read.table("ill-64.txt", quote="\"", comment.char="")
+ill_64$year <-  rep("1964")
+
+alldata <- rbind(ill_60,ill_61,ill_62,ill_63,ill_64)
+alldata$year <- as.numeric(alldata$year)
+Q5 <- ggplot(data=alldata)+
+  aes(x=year)+
+  geom_histogram(bin=5,fill = "orange")+
+  labs(x="Year",y="Count")+
+  theme_classic()
+ggplotly(Q5)
+
+ill_60 <-as.numeric(as.array(ill_60 [,1]))
+ill_61<-as.numeric(as.array(ill_61[,1]))
+ill_62<-as.numeric(as.array(ill_62[,1]))
+ill_63<-as.numeric(as.array(ill_63[,1]))
+ill_64<-as.numeric(as.array(ill_64[,1]))
+
+library(fitdistrplus)
+
+plotdist(ill_60)
+plotdist(ill_61)
+plotdist(ill_62)
+plotdist(ill_63)
+plotdist(ill_64)
+
+wet <- alldata %>% 
+  group_by(year) %>% 
+  summarise(total_amount = sum(V1),avg_amount = mean(V1))
+wet
+
+#Test whether the gamma distribution was a good fit for their data.
+allrain<-c(ill_60,ill_61,ill_62,ill_63,ill_64)
+fgamma <- fitdist(allrain, "gamma")
+plot(fgamma)
+
+
+
+# calculate MOM and MLE
+MOMENT<- fitdist(allrain, "gamma",method = "mme")
+boot_mom <- bootdist(MOMENT)
+summary(boot_mom)
+
+MLE<- fitdist(allrain, "gamma",method = "mle")
+boot_mle <- bootdist(MLE)
+summary(boot_mle)
+```
+
+
+After the exploration data analysis, we found that the year 1962 has the most storm. But the year 1962 has the most amount of percipitation and also the highest average amount of percipitation. In general, based on the gamma distribution, our data shows the percipitation during the 5 years are consistent.
+In addition, 95% confidence interval for moment of shape from bootstrap sample is (0.27,0.53), the rate is (1.17,2.58). For MLE, the 95% confidence interval of shape from bootstrap sample is (0.38,0.51),the rate is (1.56,2.56). Therefore, the MLE estimates have narraow CI and thus lower variances and should be chosen.
+
+## decision theory
+
+$$P(x_1,...,x_n|\delta)=\prod_{i=1}^{N}P(X=x_i|\delta)=\prod_{i=1}^{N}\delta^{x_i}(1-\delta)^{x_i} $$
+Let n be number of $\beta$ with value 1
+$$ (\beta_s, s\in S)=(0,1) $$
+$$ P(x_1,...,x_n|\delta)=\delta^{n}(1-\delta)^{N-n} $$
+Prior:
+$$ P(\delta)=Beta(c,d)=\frac{1}{B(c,d)}\delta^{c-1}(1-\delta)^{d-1} $$
+From Bayes
+$$ P(\delta|x_1,...,x_n)=P(x_1,...,x_n|\delta)P(\delta)=\frac{1}{C}\delta^{c+n-1}(1-\delta)^{N-n+d-1} $$
+Where $C=\int P(x_1,...,x_n,\delta)d\delta$ is the normalizing constant. But notice that this posterior is also a Beta distribution, with new parameters:
+$$ \delta|x_1,...,x_n \sim Beta(c+n, d+N-n)$$
+$$ \beta=E(\delta|x_1,...,x_n)=\frac{c+n}{c+d+N} $$
+From:
+$$ \delta(n)=0\quad for \quad\beta<\alpha $$
+$$ \delta(n)=\lambda\quad for \quad\beta=\alpha, \quad where \quad 0<\lambda<1 $$
+$$ \delta(n)=1\quad for \quad\beta>\alpha $$
+We have:
+$$ \delta(n)=0\quad for \quad(c+n)/(c+d+N)<\alpha $$
+$$ \delta(n)=\lambda\quad for \quad(c+n)/(c+d+N)=\alpha, \quad where \quad 0<\lambda<1 $$
+$$ \delta(n)=1\quad for \quad(c+n)/(c+d+N)>\alpha $$
